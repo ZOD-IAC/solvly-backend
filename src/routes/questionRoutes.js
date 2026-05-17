@@ -17,7 +17,6 @@ const route = express.Router();
 // PUBLIC ROUTES --------------------------------------------------------------------------------------
 
 // GET
-route.get("/api/get-question/:questionId",optionalAuth, fetchQuestoinDetail); // GET QUESTION DETAILS
 route.get("/api/get-questionList", optionalAuth,  getQuestionList);  // GET QUESTION LIST WITH DETAIL
 route.get("/api/getTags/", getTagList);  // GET TAGs LIST
 route.get("/api/getStats/", getStatsData);  // GET STATS DATA (QUESTION PAGE)
@@ -26,6 +25,9 @@ route.get("/api/getStats/", getStatsData);  // GET STATS DATA (QUESTION PAGE)
 
 
 // PATCH
+
+// OPTIONAL PROCTECTED ROUTES --------------------------------------------------------------------------------------
+route.get("/api/get-question/:questionId", optionalAuth ,fetchQuestoinDetail); // GET QUESTION DETAILS
 
 
 // PRIVATE ROUTES --------------------------------------------------------------------------------------

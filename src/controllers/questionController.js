@@ -1,13 +1,13 @@
-import User from "../models/user.js";
-import { Question, Vote } from "../models/question.js";
-import Tags from "../models/tags.js";
-import Answer from "../models/answer.js";
-import { VoteOption } from "../utils/Constants.js";
+import User from '../models/user.js';
+import { Question, Vote } from '../models/question.js';
+import Tags from '../models/tags.js';
+import Answer from '../models/answer.js';
+import { VoteOption } from '../utils/Constants.js';
 import {
   getQuestionRelatedToFilter,
   getTagsRelatedToFilter,
-} from "../services/question.services.js";
-import { Saved } from "../models/saved.js";
+} from '../services/question.services.js';
+import { Saved } from '../models/saved.js';
 
 export const createQuestion = async (req, res) => {
   try {
@@ -30,15 +30,15 @@ export const createQuestion = async (req, res) => {
       })),
     );
 
-    await User.findByIdAndUpdate(userId, { $inc: { "stats.questions": 1 } });
+    await User.findByIdAndUpdate(userId, { $inc: { 'stats.questions': 1 } });
 
     res.status(200).json({
-      message: "Question added successfully",
+      message: 'Question added successfully',
       ok: true,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Something went wrong",
+      message: 'Something went wrong',
       ok: false,
     });
   }
@@ -56,7 +56,7 @@ export const deleteQuestion = async (req, res) => {
 
     if (!question) {
       res.status(404).json({
-        message: "Question not found or unauthorized action",
+        message: 'Question not found or unauthorized action',
         ok: false,
       });
     }
@@ -64,17 +64,17 @@ export const deleteQuestion = async (req, res) => {
     await User.findOneAndUpdate(
       { _id: userId },
       {
-        $inc: { "stats.question": -1 },
+        $inc: { 'stats.question': -1 },
       },
     );
 
     res.status(201).json({
-      message: "Question deleted successfully",
+      message: 'Question deleted successfully',
       ok: true,
     });
   } catch (error) {
     res.status(400).json({
-      message: "Something went wrong while deleting the question",
+      message: 'Something went wrong while deleting the question',
       ok: false,
     });
   }
@@ -89,18 +89,18 @@ export const userQuestion = async (req, res) => {
 
     if (!question) {
       res.status(404).json({
-        message: "Question not found",
+        message: 'Question not found',
         ok: false,
       });
     }
 
     res.status(201).json({
-      message: "Question fetched successfully",
+      message: 'Question fetched successfully',
       question,
       ok: true,
     });
   } catch (error) {
-    console.warns("error :", error);
+    console.warns('error :', error);
     res.status(400).json({
       message: "Something went wrong while fetching user's question",
       ok: false,
@@ -118,7 +118,8 @@ export const saveQuestion = async (req, res) => {
 
     if (!question) {
       return res.status(404).json({
-        message: "Question Not found with this id",
+        isSaved: false,
+        message: 'Question Not found with this id',
         ok: true,
       });
     }
@@ -130,20 +131,24 @@ export const saveQuestion = async (req, res) => {
 
     if (!checkExisted) {
       await Saved.create({ user: _id, question: questionId });
-      return res
-        .status(200)
-        .json({ message: "Question Saved successfully", ok: true });
+      return res.status(200).json({
+        isSaved: true,
+        message: 'Question Saved successfully',
+        ok: true,
+      });
     }
 
     await Saved.deleteOne({ user: _id, question: questionId });
     return res.status(200).json({
-      message: "Question removed from Saved",
+      isSaved: false,
+      message: 'Question removed from Saved',
       ok: true,
     });
   } catch (error) {
-    console.warn(error, ": error");
+    console.warn(error, ': error');
     return res.status(500).json({
-      message: "Question cannot be save !",
+      isSaved: false,
+      message: 'Question cannot be save !',
       ok: false,
     });
   }
@@ -152,36 +157,48 @@ export const saveQuestion = async (req, res) => {
 export const fetchQuestoinDetail = async (req, res) => {
   try {
     const { questionId } = req.params;
+    const { user } = req;
+    let isSaved = false;
 
-    const question = await Question.findOneAndUpdate(
+    const questionData = await Question.findOneAndUpdate(
       { _id: questionId },
       {
         $inc: { views: 1 },
       },
       { new: true },
     )
-      .populate({ path: "answers" })
-      .populate("user", "name avatar reputation");
+      .populate({ path: 'answers' })
+      .populate('user', 'name avatar reputation');
 
-    if (!question) {
+    if (!questionData) {
       return res.status(400).json({
-        message: "Question not found !",
+        message: 'Question not found !',
         ok: false,
       });
     }
 
-    const tags = await Tags.find({ _id: { $in: question.tags } });
+    if (user) {
+      const saved = await Saved.exists({
+        user: user?.id,
+        question: questionId,
+      });
+      isSaved = saved ? true : false;
+    }
+    const question = questionData.toObject();
+    question['isSaved'] = isSaved;
+
+    const tags = await Tags.find({ _id: { $in: questionData.tags } });
     if (!tags) tags = [];
 
     res.status(200).json({
       data: { question, tags },
       ok: true,
-      message: "question fetched successfully",
+      message: 'question fetched successfully',
     });
   } catch (error) {
-    console.warn(error, ": error");
+    console.warn(error, ': error');
     return res.status(400).json({
-      message: "Question not found !",
+      message: 'Question not found !',
       ok: false,
     });
   }
@@ -199,7 +216,7 @@ export const getQuestionList = async (req, res) => {
       const saved = await Saved.find({
         user: userId,
         question: { $in: questions.map((q) => q._id) },
-      }).select("question");
+      }).select('question');
 
       savedSet = new Set(saved.map((s) => s.question.toString()));
     }
@@ -215,9 +232,9 @@ export const getQuestionList = async (req, res) => {
       questions: questionsWithSaved,
     });
   } catch (error) {
-    console.warn(error, ": error");
+    console.warn(error, ': error');
     return res.status(400).json({
-      message: "server error : failed to fetch!",
+      message: 'server error : failed to fetch!',
       ok: false,
     });
   }
@@ -234,9 +251,9 @@ export const getTagList = async (req, res) => {
       data: tags,
     });
   } catch (error) {
-    console.log(error, "Something went wrong!");
+    console.log(error, 'Something went wrong!');
     return res.status(400).json({
-      message: "tags not found !",
+      message: 'tags not found !',
       ok: false,
     });
   }
@@ -261,23 +278,23 @@ export const getStatsData = async (req, res) => {
         // Trending tags — most used in questions created today
         Question.aggregate([
           { $match: { createdAt: { $gte: startOfDay } } },
-          { $unwind: "$tags" },
-          { $group: { _id: "$tags", count: { $sum: 1 } } },
+          { $unwind: '$tags' },
+          { $group: { _id: '$tags', count: { $sum: 1 } } },
           { $sort: { count: -1 } },
           { $limit: 5 },
           {
             $lookup: {
-              from: "tags", // your Tag collection name
-              localField: "_id",
-              foreignField: "_id",
-              as: "tag",
+              from: 'tags', // your Tag collection name
+              localField: '_id',
+              foreignField: '_id',
+              as: 'tag',
             },
           },
-          { $unwind: "$tag" },
+          { $unwind: '$tag' },
           {
             $project: {
               _id: 0,
-              name: "$tag.name",
+              name: '$tag.name',
               count: 1,
             },
           },
@@ -295,7 +312,7 @@ export const getStatsData = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ ok: false, message: "Something went wrong!" });
+    res.status(500).json({ ok: false, message: 'Something went wrong!' });
   }
 };
 
@@ -314,18 +331,18 @@ export const createTag = async (req, res) => {
 
     const newtag = await Tags.create({
       tagName: tagName,
-      slug: tagName.replace(" ", "-"),
+      slug: tagName.replace(' ', '-'),
     });
 
     res.status(200).json({
       newtag,
       ok: true,
-      message: "Tags fetched successfully",
+      message: 'Tags fetched successfully',
     });
   } catch (error) {
-    console.log(error, "Something went wrong!");
+    console.log(error, 'Something went wrong!');
     return res.status(400).json({
-      message: "Server error : unable to create tag !",
+      message: 'Server error : unable to create tag !',
       ok: false,
     });
   }
@@ -339,7 +356,7 @@ export const questionVote = async (req, res) => {
     if (!voteType || !VoteOption[voteType]) {
       res.status(400).json({
         ok: false,
-        message: "Valid voteType is required. 1 = upvote, 2 = downvote",
+        message: 'Valid voteType is required. 1 = upvote, 2 = downvote',
       });
     }
 
@@ -347,14 +364,14 @@ export const questionVote = async (req, res) => {
     if (!question) {
       return res.status(404).json({
         ok: false,
-        message: "Question Not Found!",
+        message: 'Question Not Found!',
       });
     }
 
     if (question.user.toString() === req.user._id.toString()) {
       return res.status(403).json({
         ok: false,
-        message: "Cannot Vote your Own Question.",
+        message: 'Cannot Vote your Own Question.',
       });
     }
 
@@ -364,7 +381,7 @@ export const questionVote = async (req, res) => {
     });
 
     if (existingVoted) {
-      if (existingVoted["voteType"] === VoteOption[voteType]) {
+      if (existingVoted['voteType'] === VoteOption[voteType]) {
         await Vote.deleteOne({ _id: existingVoted._id });
         question[VoteOption[voteType]] -= 1;
       } else {
@@ -379,7 +396,7 @@ export const questionVote = async (req, res) => {
       await Vote.create({
         userId: req.user._id,
         targetId: question._id,
-        targetType: "Question",
+        targetType: 'Question',
         voteType: VoteOption[voteType],
       });
 
@@ -398,9 +415,9 @@ export const questionVote = async (req, res) => {
       },
     });
   } catch (error) {
-    console.warn(error, ": error");
+    console.warn(error, ': error');
     return res.status(400).json({
-      message: "Server error !",
+      message: 'Server error !',
       ok: false,
     });
   }

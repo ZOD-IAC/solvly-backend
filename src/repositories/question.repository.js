@@ -52,7 +52,7 @@ const findByFilter = async (options) => {
       sortObj = { views: -1 };
       break;
     case 'unanswered':
-      filter.answerCount = { $eq: 0 };
+      filter.answersCount = { $eq: 0 };
       sortObj = { createdAt: -1 };
       break;
     default:
