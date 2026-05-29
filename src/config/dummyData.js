@@ -17,7 +17,8 @@ export const bootstrap = async () => {
     let admin = await User.findOne({ role: "admin" });
 
     if (!admin) {
-      const hashpass = await bcrypt.hash(ADMIN_PASS, 10);
+      const salt = await bcrypt.genSalt(10);
+      const hashpass = await bcrypt.hash(ADMIN_PASS, salt);
       const avatar = multiavatar("Super Admin");
 
       admin = await User.create({
