@@ -1,11 +1,14 @@
-const mongoose = require("mongoose");
-const slugify = require("slugify");
+import mongoose from "mongoose";
+import slugify from 'slugify'
+import { Question } from "../../models/question.js";
+import Tags from "../../models/tags.js"
+import User from "../../models/user.js";
 
 // ============================================
 // CONFIG
 // ============================================
 
-const MONGODB_URI = "YOUR_MONGODB_URI";
+const MONGODB_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/querynest';
 const TOTAL_QUESTIONS = 1200; // Safe range: 1200–5000. Max unique = PREFIXES × TOPICS × CONTEXTS = 20 × 81 × 20 = 32,400
 const CHUNK_SIZE = 200;
 
@@ -23,7 +26,7 @@ const USER_IDS = [
 // TAGS
 // ============================================
 
-const TAGS = [
+const TAG = [
   "javascript",
   "react",
   "nodejs",
@@ -343,22 +346,22 @@ async function seed() {
 
     console.log("✅ MongoDB connected");
 
-    const Tag = mongoose.model("Tags");
-    const Question = mongoose.model("Question");
+    // const Tag = mongoose.model("Tags");
+    // const Question = mongoose.model("Question");
 
     // ========================================
     // CLEAR OLD DATA
     // ========================================
 
-    await Promise.all([Question.deleteMany({}), Tag.deleteMany({})]);
+    await Promise.all([Question.deleteMany({}), Tags.deleteMany({})]);
     console.log("🗑️  Old data cleared");
 
     // ========================================
     // CREATE TAGS (usageCount computed after questions are inserted)
     // ========================================
 
-    const createdTags = await Tag.insertMany(
-      TAGS.map((tag) => ({
+    const createdTags = await Tags.insertMany(
+      TAG.map((tag) => ({
         tagName: tag,
         slug: slugify(tag, { lower: true, strict: true }),
         description: `${tag} related discussions and questions`,
@@ -422,11 +425,32 @@ async function seed() {
     console.log("🔄 Updating tag usageCounts...");
 
     const tagUpdates = [...tagUsageMap.entries()].map(([id, count]) =>
-      Tag.updateOne(
+      Tags.updateOne(
         { _id: new mongoose.Types.ObjectId(id) },
         { $set: { usageCount: count } }
       )
     );
+    // ========================================
+    // BACK-FILL USER QUESTION COUNTS
+    // ========================================
+      
+    console.log("🔄 Updating question counts in user stats...");
+      
+    // Single aggregation instead of N countDocuments calls
+    const questionCounts = await Question.aggregate([
+      { $group: { _id: "$user", count: { $sum: 1 } } },
+    ]);
+    
+    await User.bulkWrite(
+      questionCounts.map(({ _id, count }) => ({
+        updateOne: {
+          filter: { _id },
+          update: { $set: { "stats.questions": count } },
+        },
+      }))
+    );
+    
+    console.log(`✅ ${questionCounts.length} user question counts updated`);
 
     await Promise.all(tagUpdates);
     console.log(`✅ ${tagUpdates.length} tag usageCounts updated`);
