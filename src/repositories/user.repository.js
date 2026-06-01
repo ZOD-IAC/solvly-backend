@@ -48,7 +48,7 @@ const fetchUserByFilter = async (options) => {
 
   const [users, total] = await Promise.all([
     User.find(filter)
-      .select("-password -email")
+      .select("-password")
       .sort(sortObj)
       .skip(skip)
       .limit(Number(limit))

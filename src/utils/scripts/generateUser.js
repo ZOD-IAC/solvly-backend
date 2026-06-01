@@ -301,6 +301,22 @@ function buildAvatar(name) {
   }
 }
 
+// Realistic reputation distribution — most users are newcomers,
+// few are highly reputed. Mirrors how real platforms look.
+// Range: 0–9999
+function weightedReputation() {
+  const r = Math.random();
+  if (r < 0.4) return randomInt(0, 99); // 40% — newcomers
+  if (r < 0.7) return randomInt(100, 499); // 30% — active members
+  if (r < 0.88) return randomInt(500, 1999); // 18% — regulars
+  if (r < 0.97) return randomInt(2000, 4999); //  9% — veterans
+  return randomInt(5000, 9999); //  3% — top contributors
+}
+
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 async function buildUserDoc({ name, role = "user" }) {
   const email = buildEmail(name);
   const plain = buildPassword(name);
@@ -313,7 +329,7 @@ async function buildUserDoc({ name, role = "user" }) {
     password,
     avatar,
     role,
-    reputation: 0,
+    reputation: role === "admin" ? 999999 : weightedReputation(),
     stats: { questions: 0, answers: 0 },
   };
 }
