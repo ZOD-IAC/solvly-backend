@@ -277,7 +277,8 @@ export const getStatsData = async (req, res) => {
 
         // Trending tags — most used in questions created today
         Question.aggregate([
-          { $match: { createdAt: { $gte: startOfDay } } },
+          // Uncomment this to get original that
+          // { $match: { createdAt: { $gte: startOfDay } } },
           { $unwind: '$tags' },
           { $group: { _id: '$tags', count: { $sum: 1 } } },
           { $sort: { count: -1 } },
@@ -294,8 +295,10 @@ export const getStatsData = async (req, res) => {
           {
             $project: {
               _id: 0,
-              name: '$tag.name',
+              name: '$tag.tagName',
+              slug:'$tag.slug',
               count: 1,
+              id: '$tag._id' 
             },
           },
         ]),
