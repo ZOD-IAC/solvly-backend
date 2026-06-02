@@ -11,7 +11,7 @@ const findByUser = async (userId, options) => {
 };
 
 const findByFilter = async (options) => {
-  const { tags, title, sort, limit, user, noAnswers, page = 1 } = options;
+  const { tags, title, sort, limit = 15, user, noAnswers, page = 1 } = options;
   const filter = {};
 
   // Title search
