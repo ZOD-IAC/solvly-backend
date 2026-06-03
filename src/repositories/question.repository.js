@@ -71,8 +71,7 @@ const findByFilter = async (options) => {
     Question.countDocuments(filter),
   ]);
 
-  // return { questions, total, page: Number(page), limit: Number(limit) };
-  return questions;
+  return { questions, total, page: Number(page), limit: Number(limit) };
 };
 
 const findTagsbyFilter = async (options) => {

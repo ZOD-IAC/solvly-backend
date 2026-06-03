@@ -208,7 +208,7 @@ export const getQuestionList = async (req, res) => {
   try {
     const query = req.query;
     const userId = req.user?.id ?? null; // null if guest
-    const questions = await getQuestionRelatedToFilter(query);
+    const { questions, total, page, limit } = await getQuestionRelatedToFilter(query);
 
     // If logged in, find which questions this user has saved
     let savedSet = new Set();
@@ -229,7 +229,7 @@ export const getQuestionList = async (req, res) => {
     return res.status(200).json({
       ok: true,
       message: `${questions.length} questions fetched!`,
-      questions: questionsWithSaved,
+      data: {questions : questionsWithSaved , total , page , limit},
     });
   } catch (error) {
     console.warn(error, ': error');
