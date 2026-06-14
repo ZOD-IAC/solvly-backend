@@ -62,7 +62,7 @@ const fetchUserByFilter = async (options) => {
 const fetchSavedQuestion = async (userId) => {
   const getQuestion = await await Saved.find({ user: userId }).populate({
     path: "question",
-    select: "title _id tags",
+    select: "title _id tags createdAt",
     populate: [
       {
         path: "tags",

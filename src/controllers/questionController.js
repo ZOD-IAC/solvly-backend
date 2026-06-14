@@ -14,6 +14,15 @@ export const createQuestion = async (req, res) => {
     const { title, content, tags } = req.body;
     const { _id: userId } = req.user;
 
+    const isExistingQuestion = await Question.find({ title });
+
+    if (isExistingQuestion) {
+      return res.status(409).json({
+        message: 'Question with this title already exist!',
+        ok: false,
+      });
+    }
+
     await Question.create({
       title,
       body: content,
@@ -156,12 +165,13 @@ export const saveQuestion = async (req, res) => {
 
 export const fetchQuestoinDetail = async (req, res) => {
   try {
-    const { questionId } = req.params;
+    const { questionTitle } = req.params;
+    const questionPattern = questionTitle.split('-').join(' ');
     const { user } = req;
     let isSaved = false;
 
     const questionData = await Question.findOneAndUpdate(
-      { _id: questionId },
+      { title: { $eq: questionPattern } },
       {
         $inc: { views: 1 },
       },
@@ -180,7 +190,7 @@ export const fetchQuestoinDetail = async (req, res) => {
     if (user) {
       const saved = await Saved.exists({
         user: user?.id,
-        question: questionId,
+        question: questionData._id,
       });
       isSaved = saved ? true : false;
     }
@@ -208,7 +218,8 @@ export const getQuestionList = async (req, res) => {
   try {
     const query = req.query;
     const userId = req.user?.id ?? null; // null if guest
-    const { questions, total, page, limit } = await getQuestionRelatedToFilter(query);
+    const { questions, total, page, limit } =
+      await getQuestionRelatedToFilter(query);
 
     // If logged in, find which questions this user has saved
     let savedSet = new Set();
@@ -229,7 +240,7 @@ export const getQuestionList = async (req, res) => {
     return res.status(200).json({
       ok: true,
       message: `${questions.length} questions fetched!`,
-      data: {questions : questionsWithSaved , total , page , limit},
+      data: { questions: questionsWithSaved, total, page, limit },
     });
   } catch (error) {
     console.warn(error, ': error');
@@ -296,9 +307,9 @@ export const getStatsData = async (req, res) => {
             $project: {
               _id: 0,
               name: '$tag.tagName',
-              slug:'$tag.slug',
+              slug: '$tag.slug',
               count: 1,
-              id: '$tag._id' 
+              id: '$tag._id',
             },
           },
         ]),
